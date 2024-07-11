@@ -1,1 +1,414 @@
-{"metadata":{"kernelspec":{"language":"python","display_name":"Python 3","name":"python3"},"language_info":{"name":"python","version":"3.10.13","mimetype":"text/x-python","codemirror_mode":{"name":"ipython","version":3},"pygments_lexer":"ipython3","nbconvert_exporter":"python","file_extension":".py"},"kaggle":{"accelerator":"gpu","dataSources":[{"sourceId":8933450,"sourceType":"datasetVersion","datasetId":5374442}],"dockerImageVersionId":30747,"isInternetEnabled":true,"language":"python","sourceType":"notebook","isGpuEnabled":true}},"nbformat_minor":4,"nbformat":4,"cells":[{"cell_type":"code","source":"import torch\nimport torch.nn as nn\nfrom torch.nn import functional as f\ndevice='cuda' if torch.cuda.is_available() else 'cpu'\nprint(device)","metadata":{"execution":{"iopub.status.busy":"2024-07-11T21:04:32.722354Z","iopub.execute_input":"2024-07-11T21:04:32.722730Z","iopub.status.idle":"2024-07-11T21:04:32.728766Z","shell.execute_reply.started":"2024-07-11T21:04:32.722701Z","shell.execute_reply":"2024-07-11T21:04:32.727579Z"},"trusted":true},"execution_count":32,"outputs":[{"name":"stdout","text":"cuda\n","output_type":"stream"}]},{"cell_type":"code","source":"!wget https://github.com/Swayam-Patel-un/LLM-project/blob/main/The_US_Constitution.txt","metadata":{"execution":{"iopub.status.busy":"2024-07-11T20:16:30.027985Z","iopub.execute_input":"2024-07-11T20:16:30.029098Z","iopub.status.idle":"2024-07-11T20:16:31.724527Z","shell.execute_reply.started":"2024-07-11T20:16:30.029059Z","shell.execute_reply":"2024-07-11T20:16:31.723528Z"},"trusted":true},"execution_count":10,"outputs":[{"name":"stdout","text":"--2024-07-11 20:16:30--  https://github.com/Swayam-Patel-un/LLM-project/blob/main/The_US_Constitution.txt\nResolving github.com (github.com)... 140.82.121.4\nConnecting to github.com (github.com)|140.82.121.4|:443... connected.\nHTTP request sent, awaiting response... 200 OK\nLength: unspecified [text/html]\nSaving to: 'The_US_Constitution.txt'\n\nThe_US_Constitution     [ <=>                ] 772.04K  --.-KB/s    in 0.1s    \n\n2024-07-11 20:16:31 (6.42 MB/s) - 'The_US_Constitution.txt' saved [790566]\n\n","output_type":"stream"}]},{"cell_type":"code","source":"with open(\"The_US_Constitution.txt\",\"r\",encoding=\"utf-8\") as f:\n    text=f.read()\n    \nprint(len(text))\nchar=sorted(set(text))\nprint(char)\nprint(len(char))","metadata":{"execution":{"iopub.status.busy":"2024-07-11T20:19:41.498398Z","iopub.execute_input":"2024-07-11T20:19:41.499345Z","iopub.status.idle":"2024-07-11T20:19:41.517866Z","shell.execute_reply.started":"2024-07-11T20:19:41.499310Z","shell.execute_reply":"2024-07-11T20:19:41.516701Z"},"trusted":true},"execution_count":13,"outputs":[{"name":"stdout","text":"790550\n['\\n', ' ', '!', '\"', '#', '$', '%', '&', \"'\", '(', ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?', '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '\\\\', ']', '_', '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '}', '\\xa0', '·', '’', '\\ufeff']\n97\n","output_type":"stream"}]},{"cell_type":"code","source":"str_to_int = { ch:i for i,ch in enumerate(char) }\nint_to_str = { i:ch for i,ch in enumerate(char) }\nencode = lambda s: [str_to_int[c] for c in s]\ndecode = lambda l: ''.join([int_to_str[i] for i in l])\n\nprint(encode('America'))\ndecode_am=decode(encode('America'))\nprint(decode_am)","metadata":{"execution":{"iopub.status.busy":"2024-07-11T20:24:57.292412Z","iopub.execute_input":"2024-07-11T20:24:57.293252Z","iopub.status.idle":"2024-07-11T20:24:57.299614Z","shell.execute_reply.started":"2024-07-11T20:24:57.293219Z","shell.execute_reply":"2024-07-11T20:24:57.298699Z"},"trusted":true},"execution_count":18,"outputs":[{"name":"stdout","text":"[34, 77, 69, 82, 73, 67, 65]\nAmerica\n","output_type":"stream"}]},{"cell_type":"code","source":"data=torch.tensor(encode(text), dtype=torch.long)\nprint(data[:100])","metadata":{"execution":{"iopub.status.busy":"2024-07-11T20:28:49.901140Z","iopub.execute_input":"2024-07-11T20:28:49.901653Z","iopub.status.idle":"2024-07-11T20:28:50.118211Z","shell.execute_reply.started":"2024-07-11T20:28:49.901623Z","shell.execute_reply":"2024-07-11T20:28:50.117245Z"},"trusted":true},"execution_count":21,"outputs":[{"name":"stdout","text":"tensor([ 0,  0,  0,  0,  0,  0, 29,  2, 37, 48, 36, 53, 58, 49, 38,  1, 72, 84,\n        77, 76, 31,  0, 29, 72, 84, 77, 76,  0,  1,  1, 76, 65, 78, 71, 30,  3,\n        69, 78,  3,  0,  1,  1,  0,  1,  1, 68, 65, 84, 65, 14, 67, 79, 76, 79,\n        82, 14, 77, 79, 68, 69, 30,  3, 65, 85, 84, 79,  3,  1, 68, 65, 84, 65,\n        14, 76, 73, 71, 72, 84, 14, 84, 72, 69, 77, 69, 30,  3, 76, 73, 71, 72,\n        84,  3,  1, 68, 65, 84, 65, 14, 68, 65])\n","output_type":"stream"}]},{"cell_type":"code","source":"n=int(0.75*len(data))\ntrain=data[:n]\ntest=data[n:]\nblocksize=7\nbatchsize=5\nx=train[:blocksize]\ny=train[1:blocksize+1]\nfor i in range(blocksize):\n    cont=x[:i+1]\n    tar=y[i]\n    print(\"When input is \",cont,\" target is \",tar)","metadata":{"execution":{"iopub.status.busy":"2024-07-11T20:55:09.573786Z","iopub.execute_input":"2024-07-11T20:55:09.574471Z","iopub.status.idle":"2024-07-11T20:55:09.583537Z","shell.execute_reply.started":"2024-07-11T20:55:09.574436Z","shell.execute_reply":"2024-07-11T20:55:09.582518Z"},"trusted":true},"execution_count":26,"outputs":[{"name":"stdout","text":"When input is  tensor([0])  target is  tensor(0)\nWhen input is  tensor([0, 0])  target is  tensor(0)\nWhen input is  tensor([0, 0, 0])  target is  tensor(0)\nWhen input is  tensor([0, 0, 0, 0])  target is  tensor(0)\nWhen input is  tensor([0, 0, 0, 0, 0])  target is  tensor(0)\nWhen input is  tensor([0, 0, 0, 0, 0, 0])  target is  tensor(29)\nWhen input is  tensor([ 0,  0,  0,  0,  0,  0, 29])  target is  tensor(2)\n","output_type":"stream"}]},{"cell_type":"code","source":"def get_batch(split):\n    data=train if split=='train' else test\n    ix=torch.randint(len(data)-blocksize,(batchsize,))\n    print(ix)\n    x=torch.stack([data[i:i+blocksize] for i in ix])\n    y=torch.stack([data[i+1:i+blocksize+1] for i in ix])\n    x,y=x.to(device),y.to(device)\n    return x, y\n\nx,y=get_batch('train')\nprint(\"inputs:\")\nprint(x)\nprint(\"targets:\")\nprint(y)","metadata":{"execution":{"iopub.status.busy":"2024-07-11T21:03:05.214145Z","iopub.execute_input":"2024-07-11T21:03:05.214546Z","iopub.status.idle":"2024-07-11T21:03:05.373862Z","shell.execute_reply.started":"2024-07-11T21:03:05.214517Z","shell.execute_reply":"2024-07-11T21:03:05.372949Z"},"trusted":true},"execution_count":31,"outputs":[{"name":"stdout","text":"tensor([374317,  70423, 510936, 475551, 372690])\ninputs:\ntensor([[84, 73, 79, 78, 91, 14, 87],\n        [ 1, 25, 15, 19, 22,  1, 19],\n        [73, 84, 73, 79, 78, 27, 82],\n        [65, 83, 83, 30,  3, 82, 69],\n        [28, 92, 16, 11,  2, 83, 67]], device='cuda:0')\ntargets:\ntensor([[73, 79, 78, 91, 14, 87, 69],\n        [25, 15, 19, 22,  1, 19, 15],\n        [84, 73, 79, 78, 27, 82, 69],\n        [83, 83, 30,  3, 82, 69, 65],\n        [92, 16, 11,  2, 83, 67, 11]], device='cuda:0')\n","output_type":"stream"}]},{"cell_type":"code","source":"class BigramLanguage(nn.Module):\n    def __init__(self, vocab_size):\n        super().__init__()\n        self.token_embedding_table=nn.Embedding(vocab_size,vocab_size)\n        \n    def forward(self, index, tar):\n        logits=self.token_embedding_table(index)\n        b,t,c=logits.shape\n        logits=logits.view(b*t,c)\n        tar=tar.view(b*t)\n        loss=f.cross_entropy(logits, tar)\n        return logits,loss\n    ","metadata":{"execution":{"iopub.status.busy":"2024-07-11T21:06:26.432806Z","iopub.execute_input":"2024-07-11T21:06:26.433254Z","iopub.status.idle":"2024-07-11T21:06:26.437376Z","shell.execute_reply.started":"2024-07-11T21:06:26.433222Z","shell.execute_reply":"2024-07-11T21:06:26.436420Z"},"trusted":true},"execution_count":33,"outputs":[]},{"cell_type":"code","source":"","metadata":{},"execution_count":null,"outputs":[]}]}
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "ae7aa2ad",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-11T21:27:05.984049Z",
+     "iopub.status.busy": "2024-07-11T21:27:05.983685Z",
+     "iopub.status.idle": "2024-07-11T21:27:09.864794Z",
+     "shell.execute_reply": "2024-07-11T21:27:09.863853Z"
+    },
+    "papermill": {
+     "duration": 3.888453,
+     "end_time": "2024-07-11T21:27:09.866981",
+     "exception": false,
+     "start_time": "2024-07-11T21:27:05.978528",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "cuda\n"
+     ]
+    }
+   ],
+   "source": [
+    "import torch\n",
+    "import torch.nn as nn\n",
+    "from torch.nn import functional as f\n",
+    "device='cuda' if torch.cuda.is_available() else 'cpu'\n",
+    "print(device)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "7f32e851",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-11T21:27:09.875485Z",
+     "iopub.status.busy": "2024-07-11T21:27:09.875019Z",
+     "iopub.status.idle": "2024-07-11T21:27:11.524984Z",
+     "shell.execute_reply": "2024-07-11T21:27:11.524000Z"
+    },
+    "papermill": {
+     "duration": 1.656694,
+     "end_time": "2024-07-11T21:27:11.527456",
+     "exception": false,
+     "start_time": "2024-07-11T21:27:09.870762",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "--2024-07-11 21:27:10--  https://github.com/Swayam-Patel-un/LLM-project/blob/main/The_US_Constitution.txt\r\n",
+      "Resolving github.com (github.com)... 140.82.116.4\r\n",
+      "Connecting to github.com (github.com)|140.82.116.4|:443... connected.\r\n",
+      "HTTP request sent, awaiting response... 200 OK\r\n",
+      "Length: unspecified [text/html]\r\n",
+      "Saving to: 'The_US_Constitution.txt'\r\n",
+      "\r\n",
+      "The_US_Constitution     [ <=>                ] 772.15K  --.-KB/s    in 0.03s   \r\n",
+      "\r\n",
+      "2024-07-11 21:27:11 (23.0 MB/s) - 'The_US_Constitution.txt' saved [790679]\r\n",
+      "\r\n"
+     ]
+    }
+   ],
+   "source": [
+    "!wget https://github.com/Swayam-Patel-un/LLM-project/blob/main/The_US_Constitution.txt"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "20f1e3fa",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-11T21:27:11.536355Z",
+     "iopub.status.busy": "2024-07-11T21:27:11.536028Z",
+     "iopub.status.idle": "2024-07-11T21:27:11.555627Z",
+     "shell.execute_reply": "2024-07-11T21:27:11.554447Z"
+    },
+    "papermill": {
+     "duration": 0.026432,
+     "end_time": "2024-07-11T21:27:11.557627",
+     "exception": false,
+     "start_time": "2024-07-11T21:27:11.531195",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "790663\n",
+      "['\\n', ' ', '!', '\"', '#', '$', '%', '&', \"'\", '(', ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?', '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '\\\\', ']', '_', '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '}', '\\xa0', '·', '’', '\\ufeff']\n",
+      "97\n"
+     ]
+    }
+   ],
+   "source": [
+    "with open(\"The_US_Constitution.txt\",\"r\",encoding=\"utf-8\") as f:\n",
+    "    text=f.read()\n",
+    "    \n",
+    "print(len(text))\n",
+    "char=sorted(set(text))\n",
+    "print(char)\n",
+    "print(len(char))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "0b451a24",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-11T21:27:11.565871Z",
+     "iopub.status.busy": "2024-07-11T21:27:11.565566Z",
+     "iopub.status.idle": "2024-07-11T21:27:11.572175Z",
+     "shell.execute_reply": "2024-07-11T21:27:11.571306Z"
+    },
+    "papermill": {
+     "duration": 0.013105,
+     "end_time": "2024-07-11T21:27:11.574291",
+     "exception": false,
+     "start_time": "2024-07-11T21:27:11.561186",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[34, 77, 69, 82, 73, 67, 65]\n",
+      "America\n"
+     ]
+    }
+   ],
+   "source": [
+    "str_to_int = { ch:i for i,ch in enumerate(char) }\n",
+    "int_to_str = { i:ch for i,ch in enumerate(char) }\n",
+    "encode = lambda s: [str_to_int[c] for c in s]\n",
+    "decode = lambda l: ''.join([int_to_str[i] for i in l])\n",
+    "\n",
+    "print(encode('America'))\n",
+    "decode_am=decode(encode('America'))\n",
+    "print(decode_am)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "48d6c9f2",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-11T21:27:11.582703Z",
+     "iopub.status.busy": "2024-07-11T21:27:11.582413Z",
+     "iopub.status.idle": "2024-07-11T21:27:11.793558Z",
+     "shell.execute_reply": "2024-07-11T21:27:11.792554Z"
+    },
+    "papermill": {
+     "duration": 0.217936,
+     "end_time": "2024-07-11T21:27:11.795966",
+     "exception": false,
+     "start_time": "2024-07-11T21:27:11.578030",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "tensor([ 0,  0,  0,  0,  0,  0, 29,  2, 37, 48, 36, 53, 58, 49, 38,  1, 72, 84,\n",
+      "        77, 76, 31,  0, 29, 72, 84, 77, 76,  0,  1,  1, 76, 65, 78, 71, 30,  3,\n",
+      "        69, 78,  3,  0,  1,  1,  0,  1,  1, 68, 65, 84, 65, 14, 67, 79, 76, 79,\n",
+      "        82, 14, 77, 79, 68, 69, 30,  3, 65, 85, 84, 79,  3,  1, 68, 65, 84, 65,\n",
+      "        14, 76, 73, 71, 72, 84, 14, 84, 72, 69, 77, 69, 30,  3, 76, 73, 71, 72,\n",
+      "        84,  3,  1, 68, 65, 84, 65, 14, 68, 65])\n"
+     ]
+    }
+   ],
+   "source": [
+    "data=torch.tensor(encode(text), dtype=torch.long)\n",
+    "print(data[:100])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "69f941ed",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-11T21:27:11.805911Z",
+     "iopub.status.busy": "2024-07-11T21:27:11.805586Z",
+     "iopub.status.idle": "2024-07-11T21:27:11.814750Z",
+     "shell.execute_reply": "2024-07-11T21:27:11.813657Z"
+    },
+    "papermill": {
+     "duration": 0.016741,
+     "end_time": "2024-07-11T21:27:11.816695",
+     "exception": false,
+     "start_time": "2024-07-11T21:27:11.799954",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "When input is  tensor([0])  target is  tensor(0)\n",
+      "When input is  tensor([0, 0])  target is  tensor(0)\n",
+      "When input is  tensor([0, 0, 0])  target is  tensor(0)\n",
+      "When input is  tensor([0, 0, 0, 0])  target is  tensor(0)\n",
+      "When input is  tensor([0, 0, 0, 0, 0])  target is  tensor(0)\n",
+      "When input is  tensor([0, 0, 0, 0, 0, 0])  target is  tensor(29)\n",
+      "When input is  tensor([ 0,  0,  0,  0,  0,  0, 29])  target is  tensor(2)\n"
+     ]
+    }
+   ],
+   "source": [
+    "n=int(0.75*len(data))\n",
+    "train=data[:n]\n",
+    "test=data[n:]\n",
+    "blocksize=7\n",
+    "batchsize=5\n",
+    "x=train[:blocksize]\n",
+    "y=train[1:blocksize+1]\n",
+    "for i in range(blocksize):\n",
+    "    cont=x[:i+1]\n",
+    "    tar=y[i]\n",
+    "    print(\"When input is \",cont,\" target is \",tar)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "4ac6c465",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-11T21:27:11.825719Z",
+     "iopub.status.busy": "2024-07-11T21:27:11.825040Z",
+     "iopub.status.idle": "2024-07-11T21:27:12.001620Z",
+     "shell.execute_reply": "2024-07-11T21:27:12.000551Z"
+    },
+    "papermill": {
+     "duration": 0.18312,
+     "end_time": "2024-07-11T21:27:12.003545",
+     "exception": false,
+     "start_time": "2024-07-11T21:27:11.820425",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "tensor([587762,  52410, 548418, 501284, 129641])\n",
+      "inputs:\n",
+      "tensor([[69, 14, 76, 73, 78, 69,  1],\n",
+      "        [ 1,  1,  1,  1,  1, 29, 85],\n",
+      "        [73, 86, 31, 29, 68, 73, 86],\n",
+      "        [31, 29, 68, 73, 86,  1, 68],\n",
+      "        [15, 24, 22, 18, 15, 24, 22]], device='cuda:0')\n",
+      "targets:\n",
+      "tensor([[14, 76, 73, 78, 69,  1, 72],\n",
+      "        [ 1,  1,  1,  1, 29, 85, 76],\n",
+      "        [86, 31, 29, 68, 73, 86,  1],\n",
+      "        [29, 68, 73, 86,  1, 68, 65],\n",
+      "        [24, 22, 18, 15, 24, 22, 18]], device='cuda:0')\n"
+     ]
+    }
+   ],
+   "source": [
+    "def get_batch(split):\n",
+    "    data=train if split=='train' else test\n",
+    "    ix=torch.randint(len(data)-blocksize,(batchsize,))\n",
+    "    print(ix)\n",
+    "    x=torch.stack([data[i:i+blocksize] for i in ix])\n",
+    "    y=torch.stack([data[i+1:i+blocksize+1] for i in ix])\n",
+    "    x,y=x.to(device),y.to(device)\n",
+    "    return x, y\n",
+    "\n",
+    "x,y=get_batch('train')\n",
+    "print(\"inputs:\")\n",
+    "print(x)\n",
+    "print(\"targets:\")\n",
+    "print(y)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "fe82d200",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-11T21:27:12.012977Z",
+     "iopub.status.busy": "2024-07-11T21:27:12.012679Z",
+     "iopub.status.idle": "2024-07-11T21:27:12.018791Z",
+     "shell.execute_reply": "2024-07-11T21:27:12.017913Z"
+    },
+    "papermill": {
+     "duration": 0.012847,
+     "end_time": "2024-07-11T21:27:12.020615",
+     "exception": false,
+     "start_time": "2024-07-11T21:27:12.007768",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "class BigramLanguage(nn.Module):\n",
+    "    def __init__(self, vocab_size):\n",
+    "        super().__init__()\n",
+    "        self.token_embedding_table=nn.Embedding(vocab_size,vocab_size)\n",
+    "        \n",
+    "    def forward(self, index, tar):\n",
+    "        logits=self.token_embedding_table(index)\n",
+    "        b,t,c=logits.shape\n",
+    "        logits=logits.view(b*t,c)\n",
+    "        tar=tar.view(b*t)\n",
+    "        loss=f.cross_entropy(logits, tar)\n",
+    "        return logits,loss\n",
+    "    "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "09c54a71",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003864,
+     "end_time": "2024-07-11T21:27:12.028579",
+     "exception": false,
+     "start_time": "2024-07-11T21:27:12.024715",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "gpu",
+   "dataSources": [
+    {
+     "datasetId": 5374442,
+     "sourceId": 8933450,
+     "sourceType": "datasetVersion"
+    }
+   ],
+   "dockerImageVersionId": 30747,
+   "isGpuEnabled": true,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.13"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 10.062794,
+   "end_time": "2024-07-11T21:27:13.153163",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2024-07-11T21:27:03.090369",
+   "version": "2.5.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
