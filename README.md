@@ -1,2 +1,2 @@
-# Web-Scraping
-Personal Scraping project of python
+# LLM Project
+Personal LLM project
